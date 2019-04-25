@@ -1,0 +1,50 @@
+<template>
+  <view class="canvas-wrap">
+    <canvas 
+    canvas-id="img-1" 
+    style="width:{{obj.w*2 +'px'}}; height:{{obj.h*2 +'px'}};"
+    >
+    </canvas>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import creatImg from '@/utils/shareImg';
+  export default class share extends wepy.component {
+    props = {
+      obj: Object
+    };
+    data = {
+      img_obj: []
+    };
+    events = {
+      creatImgFn(imgObj) {
+        if (imgObj) {
+          this.img_obj = imgObj;
+          let zr = creatImg.init(this.obj);
+          let pArr = [];
+          for (let i = 0; i<imgObj.length; i++) {
+            pArr.push(creatImg[imgObj[i].method](imgObj[i]))
+          }
+          Promise.all(pArr).then(res => {
+            if (res.length) {
+              for (let j = 0; j < res.length; j++) {
+                zr.add(res[j]);
+              }
+            }
+          })
+        }
+      }
+    };
+  }
+
+  
+</script>
+<style lang="less">
+  .canvas-wrap {
+    width: 100%;
+    height: 100%;
+    overflow: scroll;
+  }
+</style>

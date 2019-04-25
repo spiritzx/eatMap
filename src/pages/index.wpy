@@ -1,0 +1,422 @@
+<template>
+  <view class="wrap">
+    <view class="index-img">
+      <image class="img" src="{{img}}"></image>
+    </view>
+    <view class="main">
+      <view class="btn">
+        <button wx:if="{{isLogin}}" class="nvg-btn" hover-class="button-hover" open-type="getUserInfo" lang="zh_CN" @getuserinfo="onGotUserInfo">开始</button>
+        <navigator wx:else class="nvg-btn" url="/pages/test" open-type="navigateTo" hover-class="navigator-hover">开始</navigator>
+      </view>
+      <view class="ad-img-wrap" wx:if="{{ad1}}">
+        <Ad1Img class="ad1" :adConfigId.sync="ad1" :adpath.sync="ad1_path" :adId.sync="ad1_id" :adUrl.sync="ad1_url"></Ad1Img>
+      </view>
+      <view class="ad4-img-wrap">
+        <Ad2Img wx:if="{{ad2}}" class="child ad2" :adConfigId.sync="ad2" :adpath.sync="ad2_path" :adId.sync="ad2_id" :adUrl.sync="ad2_url"></Ad2Img>
+        <Ad3Img wx:if="{{ad3}}" class="child ad3" :adConfigId.sync="ad3" :adpath.sync="ad3_path" :adId.sync="ad3_id" :adUrl.sync="ad3_url"></Ad3Img>
+        <Ad4Img wx:if="{{ad4}}" class="child ad4" :adConfigId.sync="ad4" :adpath.sync="ad4_path" :adId.sync="ad4_id" :adUrl.sync="ad4_url"></Ad4Img>
+        <Ad5Img wx:if="{{ad5}}" class="child ad5" :adConfigId.sync="ad5" :adpath.sync="ad5_path" :adId.sync="ad5_id" :adUrl.sync="ad5_url"></Ad5Img>
+        <Ad6Img wx:if="{{ad6}}" class="child ad6" :adConfigId.sync="ad6" :adpath.sync="ad6_path" :adId.sync="ad6_id" :adUrl.sync="ad6_url"></Ad6Img>
+      </view>
+    </view>
+    <!-- 转发按钮  -->
+    <button class="shareBtn" data-share="share" @tap="openFn" wx:if="{{isShareBtn}}">
+      <image src="../asset/img/indexShareImg.png"></image>
+    </button>
+    <!-- 抽奖 -->
+    <view class="lottery-wrap" wx:if="{{option.lottery.show}}">
+      <Lottery :lottery.sync="option"></Lottery>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import Ad1Img from "C/ad_img";
+  import Ad2Img from "C/ad_img";
+  import Ad3Img from "C/ad_img";
+  import Ad4Img from "C/ad_img";
+  import Ad5Img from "C/ad_img";
+  import Ad6Img from "C/ad_img";
+  import Lottery from "C/lottery";
+  import getAd from "@/utils/getAd";
+  import wxhttp from "@/utils/wxhttp";
+  import content from '../content.js';
+
+  export default class Index extends wepy.page {
+    config = {
+      navigationBarTitleText: "吃货足迹地图",
+      navigationBarBackgroundColor: '#fbe04f'
+    };
+    components = {
+      Ad1Img,
+      Ad2Img,
+      Ad3Img,
+      Ad4Img,
+      Ad5Img,
+      Ad6Img,
+      Lottery
+    };
+    data = {
+      isLogin: true,
+      imgShow: true,
+      img: '../asset/img/index.jpg',
+      // 广告配置
+      ad1: "",
+      ad1_path: "",
+      ad1_id: "",
+      ad1_url: "",
+      ad2: "",
+      ad2_path: "",
+      ad2_id: "",
+      ad2_url: "",
+      ad3: "",
+      ad3_path: "",
+      ad3_id: "",
+      ad3_url: "",
+      ad4: "",
+      ad4_path: "",
+      ad4_id: "",
+      ad4_url: "",
+      ad5: "",
+      ad5_path: "",
+      ad5_id: "",
+      ad5_url: "",
+      ad6: "",
+      ad6_path: "",
+      ad6_id: "",
+      ad6_url: "",
+      isShareBtn: false,
+      option: {
+        lottery: {
+          show: false,
+          num: 0,
+          txt: "test",
+          imgPath: ""
+        }
+      }
+    };
+    methods = {
+      // 授权
+      onGotUserInfo() {
+        const that = this;
+        wepy.getSetting({
+          success(res) {
+            // 用户是否通过授权按钮授权
+            if (res.authSetting['scope.userInfo']) {
+              wepy.getUserInfo({
+                success: res => {
+                  let _res = res;
+                  let obj = {
+                    Business:'updataUser',
+                    gno:'gh_dfd3f012e270',
+                    userInfo: _res.rawData
+                  }
+                  wx.cloud.init({
+                    env: 'chzj-94d200'
+                  })
+    
+                  wx.cloud.callFunction({
+                    name: 'login',
+                    success(res) {
+                      console.log(res);
+                    },
+                    fail(err) {
+                      console.log(err);
+                    }
+                  })
+                  that.$broadcast("authFn");
+                  wepy.navigateTo({ url: '/pages/test'});
+                  wxhttp(obj).then(res => {
+                    if (res.data.code === "200") {
+                      that.$parent.globalData.userInfo = _res.rawData;
+                      that.$apply();
+                    }
+                  })
+                }
+              });
+            }
+            else {
+              wepy.showModal({
+                title: '提示', //提示的标题,
+                content: '请授权', //提示的内容,
+                showCancel: false, //是否显示取消按钮,
+                confirmText: '确定', //确定按钮的文字，默认为取消，最多 4 个字符,
+                confirmColor: '#3CC51F', //确定按钮的文字颜色,
+              });
+              
+            }
+          },
+          fail(res) {
+          }
+        })
+      },
+      // 打开抽奖层
+      openFn() {
+        let _option = this.option;
+        _option.lottery.show = true;
+        this.setData({
+          option: _option
+        })
+      }
+    };
+    events = {
+      // 关闭抽奖层
+      closeFn() {
+        let _option = this.option;
+        _option.lottery.show = false;
+        this.setData({
+          option: _option
+        })
+      },
+      // 传递登录信息
+      authFn() {
+        this.isLogin = false;
+      }
+    }
+    onLoad() {
+      let that = this;
+      const adNum = 6;
+      // 广告配置
+      getAd(that).then(res => {
+        if (res.ad10) {
+          let _ad10 = res.ad10;
+          that.isShareBtn = true;
+          that.$apply();
+          let _option = that.option;
+          let _date = new Date();
+          let _time = _date.getFullYear() + "-" + _date.getMonth() + "-" + _date.getDate();
+          let _lottery = wepy.getStorageSync('lottery');
+          
+          if (_lottery.time === _time) {
+            _option.lottery.show = false;
+            _option.lottery.txt = _ad10.ad_desc;
+            _option.lottery.imgPath = "https://common.5x5x5.cn/getFile?filePath=xcxGroupImg/" + _ad10.img_url;
+            that.setData({
+              option: _option
+            })
+          } else {
+            _option.lottery.show = true;
+            _option.lottery.txt = _ad10.ad_desc;
+            _option.lottery.imgPath = "https://common.5x5x5.cn/getFile?filePath=xcxGroupImg/" + _ad10.img_url;
+            that.setData({
+              option: _option
+            })
+            let _obj = {
+              time: "",
+              unusedArr: [],
+              usedArr: []
+            }
+            _obj.time = _time;
+            wepy.setStorageSync('lottery', _obj);
+          }
+        }
+        let i = 1;
+        for (; i <= adNum; i++) {
+          let ad = res["ad" + i];
+          if (ad) {
+            that["ad" + i + "_id"] = ad.ad_id;
+            that["ad" + i] = ad.id;
+            that["ad" + i + "_url"] = ad.img_url;
+            that["ad" + i + "_path"] = ad.img_path;
+            that.$apply();
+          } 
+        }
+      })
+      wepy.setStorageSync('content', "");
+      wepy.setStorageSync('content', JSON.stringify(content));
+      
+    };
+    onShow() {
+      this.isLogin = this.$parent.globalData.userInfo ? false : true;
+    };
+    // 分享
+    onShareAppMessage(res) {
+      const that = this;
+      wx.showShareMenu({
+        withShareTicket: true,
+      });
+      let obj = {};
+      if (res.from === "button") {
+        if (res.target.dataset.share === "lottery") {
+          obj = {
+            title: that.option.lottery.txt,
+            path: "/pages/index",
+            imageUrl: that.option.lottery.imgPath,
+            success(res) {
+              if (res.shareTickets) {
+                wepy.showToast({
+                  title: '分享成功，获得1次抽奖机会', //提示的内容,
+                  icon: "none", //图标,
+                  duration: 2000, //延迟时间,
+                  mask: true, //显示透明蒙层，防止触摸穿透,
+                });
+                let _lottery = wepy.getStorageSync('lottery');
+                wx.getShareInfo({
+                  shareTicket: res.shareTickets["0"],
+                    complete(res){
+                      // console.log(res)
+                    }
+                })
+                if (_lottery.unusedArr.length < 3) {
+                  _lottery.unusedArr.push(res.shareTickets["0"]);
+                  wepy.setStorageSync('lottery',_lottery);
+                  that.$broadcast("addNum");
+                } else {
+                  wepy.showToast({
+                    title: '分享次数到达今日上限', //提示的内容,
+                    icon: "none", //图标,
+                    duration: 2000, //延迟时间,
+                    mask: true, //显示透明蒙层，防止触摸穿透,
+                  });
+                }
+              } else {
+                wepy.showToast({
+                  title: '请分享到群', //提示的内容,
+                  icon: "none", //图标,
+                  duration: 2000, //延迟时间,
+                  mask: true, //显示透明蒙层，防止触摸穿透,
+                });
+              }
+            }
+          }
+        } else {
+          obj = {
+            title: "中国370多道特色菜品，你吃过哪些？",
+            path: "/pages/index"
+          }
+        }
+      }
+      else {
+        obj = {
+          title: "中国370多道特色菜品，你吃过哪些？",
+          imageUrl: "../asset/img/shareApp.jpg",
+          path: "/pages/index"
+        }
+      }
+      return obj;
+    };
+  }
+</script>
+
+<style lang="less">
+  .wrap {
+    width: 100%;
+    height: 100%;
+  }
+  .index-img {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    z-index: 1;
+    .img {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  }
+  .main {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    z-index: 10;
+  }
+  .btn {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 50rpx;
+    color: #fff;
+    position: absolute;
+    bottom: 310rpx;
+    overflow: hidden;
+    border: 0;
+    .nvg-btn {
+      width: 100%;
+      height: 100rpx;
+      line-height: 100rpx;
+      text-align: center;
+      background: #fbe04f;
+      margin-bottom: 20rpx;
+      font-size: 32rpx;
+      font-weight: 700;
+      color: #333;
+      border-radius: 50rpx;
+      overflow: hidden;
+      &::before {
+        display: none;
+      }
+      &::after {
+        display: none;
+      } 
+    }
+    .mg-btn {
+      width: 100%;
+      height: 100rpx;
+      line-height: 100rpx;
+      text-align: center;
+      background: #DF7A36;
+      color: #fff;
+      font-size: 32rpx;
+      font-weight: 700;
+      border-radius: 5px;
+    }
+    .button-hover {
+      background: #ffcc00;
+    }
+    .navigator-hover {
+      background: #ffcc00;
+    }
+  }
+  .ad-img-wrap {
+    width: 100%;
+    height: 214rpx;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+  }
+  .ad4-img-wrap {
+    position: absolute;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    bottom: 240rpx;
+    width: 100%;
+    height: 120rpx;
+    .child {
+      width: 120rpx;
+      height: 120rpx;
+    }
+  }
+  .shareBtn {
+    position: absolute;
+    top: 45%;
+    left: 20rpx;
+    z-index: 100;
+    width: 100rpx;
+    height: 132rpx;
+    padding: 0;
+    margin: 0;
+    border-radius: 0;
+    background: #fff;
+    &::before {
+      display: none;
+    }
+    &::after {
+      display: none;
+    } 
+    image {
+      width: 100rpx;
+      height: 132rpx;
+      padding: 0;
+      margin: 0;
+    }
+  }
+  .lottery-wrap {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.5);
+  }
+</style>

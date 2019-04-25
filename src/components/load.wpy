@@ -1,0 +1,109 @@
+<template>
+  <view>
+    <view class="lds-double-ring">
+      <view></view>
+      <view></view>
+    </view>
+    <view class="txt">正在计算...</view>
+  </view>
+  
+</template>
+<script>
+  import wepy from 'wepy';
+  export default class load extends wepy.component {
+    props = {
+      pb:{
+        type: Object,
+      }
+    };
+    data = {
+      pgNum: 9,
+    };
+    events = {
+      pgNumFn(pg) {
+        if (pg < 11) {
+          this.pgNum = parseInt(pg) * 9;
+        }
+        else {
+          this.pgNum = 100
+        }
+      }
+    };
+    methods = {
+    }
+    
+  }
+</script>
+
+<style lang="less">
+.lds-double-ring {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  width: 200px;
+  height: 200px;
+  margin-left: -110px;
+  margin-top: -110px;
+  
+}
+.txt {
+  color: #333;
+  position: absolute;
+  width: 100%;
+  top: 55%;
+  text-align: center;
+}
+.lds-double-ring view {
+  position: absolute;
+  width: 160px;
+  height: 160px;
+  top: 20px;
+  left: 20px;
+  border-radius: 50%;
+  border: 8px solid #000;
+  border-color: #fbe04f transparent #fbe04f transparent;
+  -webkit-animation: lds-double-ring 1s linear infinite;
+  animation: lds-double-ring 1s linear infinite;
+}
+.lds-double-ring view:nth-child(2) {
+  width: 140px;
+  height: 140px;
+  top: 30px;
+  left: 30px;
+  border-color: transparent #fed61e transparent #fed61e;
+  -webkit-animation: lds-double-ring_reverse 1s linear infinite;
+  animation: lds-double-ring_reverse 1s linear infinite;
+}
+  @keyframes lds-double-ring {
+    0% {
+      transform: rotate(0);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  @-webkit-keyframes lds-double-ring {
+    0% {
+      transform: rotate(0);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes lds-double-ring_reverse {
+    0% {
+      transform: rotate(0);
+    }
+    100% {
+      transform: rotate(-360deg);
+    }
+  }
+  @-webkit-keyframes lds-double-ring_reverse {
+    0% {
+      transform: rotate(0);
+    }
+    100% {
+      transform: rotate(-360deg);
+    }
+  }
+</style>

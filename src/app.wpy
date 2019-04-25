@@ -1,0 +1,82 @@
+<style lang="less">
+page {
+  height: 100%;
+}
+.container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+</style>
+
+<script>
+import wepy from 'wepy';
+import 'wepy-async-function';
+import getAd from "@/utils/getAd";
+
+
+export default class extends wepy.app {
+  config = {
+    "cloud": true,
+    pages: [
+      'pages/index',
+      'pages/result',
+      'pages/test',
+      'pages/user_set'
+    ],
+    window: {
+      backgroundTextStyle: 'black',
+      navigationBarBackgroundColor: '#fff',
+      navigationBarTextStyle: 'black',
+      // navigationStyle:'custom',
+      disableScroll: true
+    }
+  }
+
+  globalData = {
+    userInfo: null,
+    content: [],
+    adConfig: null,
+    session: "",
+    baseUrl: 'https://common.5x5x5.cn/xcxGroupHandler',
+    // baseUrl: 'http://192.168.0.180:1128/xcxGroupHandler',
+  }
+  onLaunch() {
+    let that = this;
+    
+    // 登录
+    wepy.login({
+      success: res => {
+        let obj = { 
+          Business:'login',
+          gno:'gh_dfd3f012e270',
+          appGno: 'gh_fb3a3646de20',
+          code: res.code
+        };
+        wepy.request({
+          url:  that.globalData.baseUrl, //开发者服务器接口地址",
+          data: obj, //请求的参数",
+          method: 'POST',
+          dataType: 'json', //如果设为json，会尝试对返回的数据做一次 JSON.parse
+          success(res) {
+            console.log(res);
+            
+            let data = res.data;
+            if (!data.errNo) {
+              let _header = JSON.stringify(res.header);
+              let header = _header.replace(/set-cookie/i,'cookie');
+              let sesId = header.match(/sesId=(\S*);/)[1];
+              let sig = header.match(/sesId.sig=(\S*);/)[1];
+              let _session = 'sesId=' + sesId + '; ' + 'sesId.sig=' + sig + ';';
+              that.globalData.session = _session;
+            };
+          }
+        });
+      },
+    });
+  }
+}
+</script>

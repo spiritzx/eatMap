@@ -1,0 +1,484 @@
+<template>
+  <view class="wrap">
+    <!-- 侧边栏 -->
+    <view @tap="selectTypeFn" class="aside">
+      <view class="aside-wrap">
+        <view 
+        wx:for="{{content}}" 
+        wx:key="i"
+        wx:for-item="item"
+        wx:for-index="index"
+        @tap="selectTypeFn({{index}})"
+        class="{{index === pNum ? 'active' : ''}}"
+        >
+          {{item.name}}
+          <text class="icon" wx:if="{{item.selectNum}}">{{item.selectNum}}</text>
+        </view>
+      </view>
+      
+    </view>
+    <!-- 选择区 -->
+    <view class="main">
+      <view class="content">
+        <view class="ul">
+          <view
+            wx:for="{{list}}" 
+            wx:key="i"
+            wx:for-item="item"
+            wx:for-index="index"
+            @tap="selectFn({{index}})"
+            class = "{{item.isSelect ? 'active' : ''}}"
+          >
+            {{item.name}}
+          </view>
+        </view>
+      </view>
+      <button @tap="submitFn" class="submit-btn">提交</button>
+    </view>
+    <view class="ad-wrap" wx:if="{{ad1>0&&ad1Show&&ad11}}">
+      <button open-type="share" data-btn="share_ad1">
+        <image data-share="share" class="ad" src="../asset/img/ad1.png"></image>
+      </button>
+      <image class="ad-close" src="../asset/img/lottery_close.png" @tap="close"></image>
+    </view>
+    <view class="ad-wrap" wx:if="{{ad2 > 0&&ad2Show&ad12}}">
+      <button open-type="share" data-btn="share_ad2">
+        <image data-share="share"  class="ad" src="../asset/img/ad2.png"></image>
+      </button>
+      <image @tap="close" class="ad-close" src="../asset/img/lottery_close.png"></image>
+    </view>
+  </view>
+</template>
+<script>
+  import wepy from 'wepy';
+  import getAd from "@/utils/getAd";
+  export default class Test extends wepy.page {
+    config = {
+      navigationBarTitleText: "选择吃过的特色菜",
+      navigationBarBackgroundColor: '#fbe04f'
+    };
+    components = {};
+    data = {
+      // 页面配置
+      isMask: false,
+      content: [],
+      list: [],
+      isLoad: false,
+      pNum: 0,
+      allNum: 0,
+      adUrl: "../asset/img/ad1.png",
+      ad11: false,
+      ad12: false,
+      ad11Txt: "",
+      ad12Txt: "",
+      ad11Img: "",
+      ad12Img: "",
+      ad1Show: false,
+      ad2Show: false,
+      ad1: 2,
+      ad2: 2
+    };
+    methods = {
+      submitFn() {
+        let _content = this.content, i = 0, len = _content.length;
+        let _arr = _content.filter(ele => {
+          return ele.selectNum > 0
+        });
+        if (_arr.length) {
+          _arr.forEach(ele => {
+            ele.city.forEach(val => {
+              val.selected = true;
+            })
+          });
+          wepy.setStorageSync('selectArr', JSON.stringify(_arr));
+          
+          wepy.navigateTo({ url: 'result' });
+          
+        } else {
+          wepy.showModal({
+            title: '提示', //提示的标题,
+            content: '请选择你吃过的菜', //提示的内容,
+            showCancel: false, //是否显示取消按钮,
+            confirmText: '确定', //确定按钮的文字，默认为取消，最多 4 个字符,
+            confirmColor: '#3CC51F', //确定按钮的文字颜色,
+          });
+        }
+      },
+      selectTypeFn(i) {
+        if (typeof i === "number") {
+          this.pNum = i;
+          this.list = this.content[i].list;
+        }
+      },
+      selectFn(i) {
+        if (typeof i === "number") {
+          this.list[i].isSelect = !this.list[i].isSelect;
+          if (this.list[i].isSelect) {
+            this.allNum++;
+            this.content[this.pNum].selectNum++;
+            console.log(_num);
+            
+          } else {
+            this.allNum--;
+            this.content[this.pNum].selectNum--;
+            console.log(_num--);
+            
+          }
+          if (this.allNum === 5) {
+            this.ad1--;
+            this.ad1Show = true;
+            let _ad11 = wepy.getStorageSync("ad11");
+            if (_ad11) {
+              _ad11.num = 1;
+              wepy.setStorageSync("ad11", _ad11);
+            }
+            
+          } else if (this.allNum === 11) {
+            this.ad2--;
+            this.ad2Show = true;
+            this.adUrl = "../asset/img/ad2.png";
+            let _ad12 = wepy.getStorageSync("ad12");
+            if (_ad12) {
+              _ad12.num = 1;
+              wepy.setStorageSync("ad12", _ad12);
+            }
+           
+          }
+          // this.content[this.pNum].selectNum = _num;
+        }
+      },
+      close(e) {
+        if (e.target.dataset.btn === "share_ad1" || e.target.dataset.btn === "share_ad2") return;
+        this.ad1Show = false;
+        this.ad2Show = false;
+      }
+    };
+    onLoad(pg) {
+      this.content = [];
+      this.list = [];
+      this.isMask = false;
+      let _content = JSON.parse(wepy.getStorageSync('content'));
+      this.content = _content;
+      this.list = this.content[0].list;
+      this.pNum = 0;
+      const that = this;
+      const AD_CONFIG = that.$parent.globalData.adConfig;
+      if (AD_CONFIG) {
+        let ad11 = AD_CONFIG.ad11;
+        let ad12 = AD_CONFIG.ad12;
+        if (ad11) {
+          this.ad11Txt = ad11.ad_desc;
+          this.ad11Img = "https://common.5x5x5.cn/getFile?filePath=xcxGroupImg/" + ad11.img_url;
+          let _date = new Date();
+          let _time = _date.getFullYear() + "-" + _date.getMonth() + "-" + _date.getDate();
+          let _ad11 = wepy.getStorageSync("ad11");
+          if (_ad11) {
+            if (_ad11.time !== _time || _ad11.num !== 1) {
+              this.ad11 = true;
+              
+              let _obj = {
+                time: _time,
+                num: 0
+              };
+              wepy.setStorageSync("ad11", _obj);
+            }
+          } else {
+            this.ad11 = true;
+            let _obj = {
+              time: _time,
+              num: 0
+            };
+            wepy.setStorageSync("ad11", _obj);
+          }
+          
+        }
+        if (ad12) {
+          this.ad12Txt = ad12.ad_desc;
+          this.ad12Img = "https://common.5x5x5.cn/getFile?filePath=xcxGroupImg/" + ad12.img_url;
+          let _date = new Date();
+          let _time = _date.getFullYear() + "-" + _date.getMonth() + "-" + _date.getDate();
+          let _ad12 = wepy.getStorageSync("ad12");
+          if (_ad12) {
+            if (_ad12.time !== _time || _ad12.num !== 1) {
+              this.ad12 = true;
+              
+              let _obj = {
+                time: _time,
+                num: 0
+              };
+              wepy.setStorageSync("ad11", _obj);
+            }
+          } else {
+            this.ad12 = true;
+            let _obj = {
+              time: _time,
+              num: 0
+            };
+            wepy.setStorageSync("ad12", _obj);
+          }
+          //common.5x5x5.cn/getFile?filePath=xcxGroupImg/" + ad20.img_url;
+        }
+      } else {
+        getAd(that).then(res => {
+          let ad11 = res.ad11;
+          let ad12 = res.ad12;
+          if (ad11) {
+            let _date = new Date();
+            let _time = _date.getFullYear() + "-" + _date.getMonth() + "-" + _date.getDate();
+            let _ad11 = wepy.getStorageSync("ad11");
+            if (_ad11) {
+              if (_ad11.time !== _time || _ad11.num !== 1) {
+                this.ad11 = true;
+                this.ad11Txt = ad11.ad_desc;
+                this.ad11Img = "https://common.5x5x5.cn/getFile?filePath=xcxGroupImg/" + ad11.img_url;
+              }
+            } else {
+              this.ad11 = true;
+              let _obj = {
+                time: _time,
+                num: 0
+              };
+              wepy.setStorageSync("ad11", _obj);
+            }
+          }
+          if (ad12) {
+            let _date = new Date();
+            let _time = _date.getFullYear() + "-" + _date.getMonth() + "-" + _date.getDate();
+            let _ad12 = wepy.getStorageSync("ad12");
+            if (_ad12) {
+              if (_ad12.time !== _time || _ad12.num !== 1) {
+                this.ad12 = true;
+                this.ad12Txt = ad12.ad_desc;
+                this.ad12Img = "https://common.5x5x5.cn/getFile?filePath=xcxGroupImg/" + ad12.img_url;
+              }
+            } else {
+              this.ad12 = true;
+              let _obj = {
+                time: _time,
+                num: 0
+              };
+              wepy.setStorageSync("ad12", _obj);
+            }
+            //common.5x5x5.cn/getFile?filePath=xcxGroupImg/" + ad20.img_url;
+          }
+        })
+      }
+    };
+    onShareAppMessage(res) {
+      const that = this;
+       wx.showShareMenu({
+        withShareTicket: true,
+      });
+      let obj = {};
+      if (res.from === "button") {
+        if (res.target.dataset.btn === "share_ad1") {
+          obj = {
+            title: that.ad11Txt,
+            path: "/pages/index",
+            imageUrl: that.ad11Img,
+            success(res) {
+              if (res.shareTickets) {
+                wepy.showToast({
+                  title: '分享成功，获得一张现金券', //提示的内容,
+                  icon: "none", //图标,
+                  duration: 2000, //延迟时间,
+                  mask: true, //显示透明蒙层，防止触摸穿透,
+                });
+                that.ad1Show = false;
+                that.$apply();
+              } else {
+                wepy.showToast({
+                  title: '请分享到群', //提示的内容,
+                  icon: "none", //图标,
+                  duration: 2000, //延迟时间,
+                  mask: true, //显示透明蒙层，防止触摸穿透,
+                });
+              }
+            }
+          }
+        } else if( res.target.dataset.btn === "share_ad2") {
+          obj = {
+            title: that.ad12Txt,
+            path: "/pages/index",
+            imageUrl: that.ad12Img,
+            success(res) {
+              if (res.shareTickets) {
+                wepy.showToast({
+                  title: '分享成功，获得一张现金券', //提示的内容,
+                  icon: "none", //图标,
+                  duration: 2000, //延迟时间,
+                  mask: true, //显示透明蒙层，防止触摸穿透,
+                });
+                that.ad1Show = false;
+                that.$apply();
+              } else {
+                wepy.showToast({
+                  title: '请分享到群', //提示的内容,
+                  icon: "none", //图标,
+                  duration: 2000, //延迟时间,
+                  mask: true, //显示透明蒙层，防止触摸穿透,
+                });
+              }
+            }
+          }
+        } else {
+          obj = {
+            title: "中国370多道特色菜品，你吃过哪些？",
+            path: "/pages/index"
+          }
+        }
+        
+      }
+      else {
+        obj = {
+          title: "中国370多道特色菜品，你吃过哪些？",
+          imageUrl: "../asset/img/shareApp.jpg",
+          path: "/pages/index"
+        }
+      }
+      return obj
+    };
+    ononUnload() {
+      console.log('注销');
+    }
+  }
+</script>
+
+<style lang="less">
+  page {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  .wrap {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: row;
+    font-size: 28rpx;
+  }
+  .aside {
+    width: 230rpx;
+    height: 100%;
+    text-align: center;
+    background: #fff;
+    .aside-wrap {
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      padding-bottom: 50rpx;
+      overflow-y: scroll;
+      view {
+        position: relative;
+        width: 80%;
+        height: 80rpx;
+        line-height: 80rpx;
+        margin: 20rpx auto;
+        border-radius: 5px;
+        background: #F0F0F0;
+        font-size: 30rpx;
+        .icon {
+          position: absolute;
+          bottom: 20rpx;
+          right: 5rpx;
+          background: #F00;
+          color: #fff;
+          width: 40rpx;
+          height: 40rpx;
+          line-height: 40rpx;
+          border-radius: 50%;
+        }
+      }
+      .active {
+        background: #f6e16a;
+      }
+    }
+    
+  }
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding-bottom: 20rpx;
+    .content {
+      flex: 1;
+      overflow-y: scroll;
+      .ul {
+        padding: 10rpx 0;
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        view {
+          margin: 10rpx 10rpx;
+          padding: 10rpx 10rpx;
+          border: 1px solid #ccc;
+          border-radius: 5px;
+          color: #555;
+        }
+        .active {
+          background: #f6e16a;
+          border: 1px solid #f6e16a;
+        }
+      }
+    }
+    .submit-btn {
+      width: 80%;
+      height: 100rpx;
+      line-height: 100rpx;
+      font-size: 36rpx;
+      font-weight: bold;
+      border-radius: 50rpx;
+      background: #f6e16a;
+      margin: 0 auto;
+      &::before {
+        display: none;
+      }
+      &::after {
+        display: none;
+      } 
+    }
+  }
+  .ad-wrap {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background: rgba(0, 0, 0, 0.5);
+    button {
+      position: absolute;
+      width: 700rpx;
+      height: 378rpx;
+      left: 50%;
+      top: 40%;
+      margin-left: -350rpx;
+      margin-top: -169rpx;
+      background: transparent;
+      padding: 0;
+      &::after {
+        display: none;
+      }
+      &::before {
+        display: none;
+      }
+      .ad {
+        width: 700rpx;
+        height: 378rpx;
+      }
+    }
+    .ad-close {
+      position: absolute;
+      width: 50rpx;
+      height: 50rpx;
+      padding: 25rpx;
+      left: 50%;
+      top: 70%;
+      margin-left: -50rpx;
+      margin-top: -50rpx;
+    }
+  }
+</style>

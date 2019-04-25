@@ -1,0 +1,796 @@
+<template>
+  <view class="wrap">
+    <!-- lock层 -->
+    <view class="lock-mask" wx:if="{{isLock}}">
+      <image src="../asset/img/lock.jpg"></image>
+      <button class="share-btn" open-type="share">分享到群解锁看结果</button>
+    </view>
+    <!-- 分享图 -->
+    <view class="shareImg">
+      <Img :obj.sync="imgObj"></Img>
+      <BigMap :obj.sync="obj"></BigMap>
+    </view>
+    <!-- 背景图 -->
+    <view class="bgImg">
+      <image src="../asset/img/bg.jpg"></image>
+    </view>
+    <!-- 主题内容 -->
+    <view class="main">
+      <!-- 用户信息已经结果 -->
+      <view class="user-info {{isShowCanvasTable ? 'isShowCanvasTable' : ''}}">
+        <image class="user-avatar" src="{{avatar}}"></image>
+        <view>{{name}}的中华美食之旅</view>
+        <view>覆盖 <text>{{typeNumber}}</text> 个菜系，超过 <text>{{number}}</text> 款特色菜</view>
+        <view>超越了 <text>{{beyond}}%</text> 的吃货</view>
+      </view>
+      <!-- 中国地图图表 -->
+      <view class="china-map-table {{isShowCanvasTable ? 'isShowCanvasTable' : ''}}">
+        <Map :ec="mapObj"></Map>
+      </view>
+      <!-- 用户选择的数据 -->
+      <view class="user-select">
+        <text class="user-select-txt {{isShowCanvasTable ? 'isShowCanvasTable' : ''}}">{{dataStr}}</text>
+      </view>
+    </view>
+    <!-- 底部框 -->
+    <view class="footer-nav">
+      <view class="test-nomal" wx:if="{{isSharePage}}">
+        <view  class="nav-btn sava-nav" @tap="savaFn"><image src="{{savaUrl}}"></image><text>{{savaTxt}}</text></view>
+        <button class="nav-btn share-nav" open-type="share"><image src="../asset/img/share.png"></image><text>{{shareTxt}}</text></button>
+        <view class="nav-btn repeat-nav" @tap="jumpIndexFn"><image src="../asset/img/home.png"></image><text>返回首页</text></view>
+      </view>
+      <view class="test-share" wx:else>
+        <image src="../asset/img/me.png"></image>
+        <button @tap="jumpIndexFn">我要看自己的结果</button>
+      </view>
+    </view>
+    <view class="mask" wx:if="{{isMask}}">
+      <view class="bg-img">
+        <image src="../asset/img/bg.jpg"></image>
+      </view>
+      <view lass="load-wrap">
+        <load :ec.sync="mapObj"></load>
+      </view>
+    </view>
+    <view wx:if="{{isShare}}" class="share-img-mask">
+      <image src="{{shareImg}}"></image>
+      <button class="close-share" @tap="closeShareFn">{{savaSuccessTxt}}</button>
+    </view>
+    <view class="ad8-img-wrap" wx:if="{{ad8_id}}">
+      <AdImg class="ad8" :adConfigId.sync="ad8" :adpath.sync="ad8_path" :adId.sync="ad8_id" :adUrl.sync="ad8_url"></AdImg>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from "wepy";
+  import load from "C/load";
+  import getAd from "@/utils/getAd";
+  import textBreak from "@/utils/txtBreak";
+  import arr from "@/utils/arr";
+  import AdImg from "C/ad_img";
+  import Map from "C/map";
+  import BigMap from "C/big_map";
+  import Img from "C/share-img";
+
+  export default class Result extends wepy.page {
+    config = {
+      navigationBarTitleText: "吃货足迹地图",
+      navigationBarBackgroundColor: "#fbe04f"
+    };
+    components = {
+      load,
+      AdImg,
+      Map,
+      BigMap,
+      Img
+    };
+    data = {
+      bgImg: "../asset/img/bg.jpg",
+      name: "haha",
+      avatar: "",
+      avatarUrl: "",
+      dataStr: "",
+      isMask: true,
+      imgObj: {
+        w: 375,
+        h: 666,
+        ele: "img-1"
+      },
+      mapObj: {
+        // lazyLoad: true,
+        option: {
+          series: [
+            {
+              type: "map",
+              mapType: "china",
+              label: {
+                normal: {
+                  show: false,
+                  formatter: function (params) {
+                    return "";
+                  }
+                }
+              },
+              itemStyle: {
+                normal: {
+                  borderWidth: 0.5, //区域边框宽度
+                  borderColor: "#dad5d4", //区域边框颜色
+                  areaColor: "#a4a4a4" //区域颜色
+                },
+                emphasis: {
+                  borderWidth: 0.5,
+                  borderColor: "#fff",
+                  areaColor: "#ffd900"
+                }
+              },
+            }
+          ]
+        }
+      },
+      obj: {
+        option: {
+          series: [
+            {
+              type: "map",
+              mapType: "china",
+              top: 100,
+              zoom: 1,
+              zlevel: 100,
+              label: {
+                normal: {
+                  show: false,
+                  formatter: function (params) {
+                    return "";
+                  }
+                }
+              },
+              itemStyle: {
+                normal: {
+                  borderWidth: 0.5, //区域边框宽度
+                  borderColor: "#dad5d4", //区域边框颜色
+                  areaColor: "#a4a4a4" //区域颜色
+                },
+                emphasis: {
+                  borderWidth: 0.5,
+                  borderColor: "#fff",
+                  areaColor: "#ffd900"
+                }
+              },
+             
+            }
+          ]
+        },
+        bg:{
+          bg: "red"
+        }
+
+      },
+      mapUrl: "",
+      typeNumber: 3,
+      number: 0,
+      favorite: "湘菜",
+      beyond: "",
+      shareImg: "",
+      isShare: false,
+      isSharePage: true,
+      isShowCanvasTable: false,
+      // 审核配置 -star
+      savaTxt: "分享到朋友圈",
+      savaUrl: "../asset/img/sava_01.png",
+      shareTxt: "分享到群",
+      savaSuccessTxt: "图片保存成功，发朋友圈有惊喜",
+      ewmUrl: "../asset/img/ewm01.png",
+      shareImgTxt1: "长按图片 选择识别",
+      shareImgTxt2: "可以测试自己的结果",
+      // 审核配置 -end
+      ad8_id: "",
+      ad8_path: "",
+      ad8_url: "",
+      ad8: "",
+      ad20: false,
+      isLock: false
+    };
+    methods = {
+      // 跳转首页
+      jumpIndexFn() {
+        this.isShowCanvasTable = false;
+        wepy.reLaunch({ url: "./index" });
+      },
+      // 保存图片
+      savaFn() {
+        const that = this;
+        wepy.showLoading({
+          title: "正在生成...", //提示的内容,
+          mask: true, //显示透明蒙层，防止触摸穿透,
+        });
+        wx.canvasToTempFilePath({
+          canvasId: "img-1",
+          success: function(res) {
+            let _imgPath = res.tempFilePath;
+            wx.saveImageToPhotosAlbum({
+              filePath: _imgPath,
+              success(res) {
+                that.isShowCanvasTable = false;
+                that.isShare = true;
+                that.shareImg = _imgPath;
+                that.$apply();
+                wepy.hideLoading();
+              },
+              fail(res) {
+                if (!!res) {
+                   wepy.hideLoading();
+                   wepy.navigateTo({ url: "/pages/user_set" });
+                }
+              }
+            })
+          }
+        })
+      },
+      // 关闭生成图片分享浮层
+      closeShareFn() {
+        this.isShare = false;
+        this.isShowCanvasTable = true;
+      },
+      // 分享到群
+      shareFn() {
+        wx.showShareMenu({
+          withShareTicket: true,
+          success(e) {
+            console.log(e);
+          }
+        })
+      }
+    };
+    onLoad(params) {
+      const that = this;
+      that.isMask = true;
+      that.isShowCanvasTable = false;
+      let _name = "",
+        _avatar = "",
+        _city = [],
+        _typeNum = 0,
+        _allNum = 0,
+        _favorite = "",
+        _dataStr = "",
+        _per = 0,
+        _allSelectArr = [];
+      // 用户通过分享进入结果页
+      if (params.obj) {
+        let _obj = JSON.parse(params.obj);
+        _avatar = _obj._avatar;
+        _name = _obj._name;
+        _typeNum = _obj._typeNum;
+        _allNum = _obj._allNum;
+        _favorite = _obj._favorite;
+        _per = _obj._per;
+        _dataStr = _obj._dataStr;
+        _city = _obj._city;
+        that.isShowCanvasTable = true;
+        that.isSharePage = false;
+        that.isMask = false;
+      } else {
+      // 正常进入
+        // 广告配置
+        const AD_CONFIG = that.$parent.globalData.adConfig;
+        
+        if (AD_CONFIG) {
+          let mode = AD_CONFIG.mode;
+          let ad8 = AD_CONFIG.ad8;
+          let ad20 = AD_CONFIG.ad20;
+          let isShare = AD_CONFIG.isShare;
+          if (mode) {
+          // 审核模式
+            that.savaTxt = "保存结果图";
+            that.savaUrl = "../asset/img/sava.png";
+            that.shareTxt = "发给好友";
+            that.savaSuccessTxt = "图片已经保存成功";
+            that.ewmUrl = "../asset/img/ewm.png";
+            that.shareImgTxt1 = "吃货足迹地图";
+            that.shareImgTxt2 = "中国特色菜你吃过多少";
+          }
+          if (isShare) {
+            that.isLock = true;
+          }
+          if (ad8) {
+            that.ad8_id  = ad8.ad_id;
+            that.ad8 = ad8.id;
+            that.ad8_url = ad8.img_url;
+            that.ad8_path = ad8.ad_path;
+          }
+          if (ad20) {
+            that.ad20 = true;
+            that.ewmUrl ="https://common.5x5x5.cn/getFile?filePath=xcxGroupImg/" + ad20.img_url;
+            that.$apply();
+          }
+        } else {
+          getAd(that).then(res => {
+            let mode = res.mode;
+            let ad8 = res.ad8;
+            let ad20 = res.ad20;
+            let isShare = res.isShare;
+            if (mode) {
+              that.savaTxt = "保存结果图";
+              that.savaSuccessTxt = "图片已经保存成功";
+              that.ewmUrl = "../asset/img/ewm.png";
+              that.$apply();
+            }
+            if (isShare) {
+              that.isLock = true;
+              that.$apply();
+            }
+            if (ad8) {
+              that.ad8 = ad8.id;
+              that.ad8_id  = ad8.ad_id;
+              that.ad8_url = ad8.img_url;
+              that.ad8_path = ad8.ad_path;
+              that.$apply();
+            }
+          })
+        }
+        // 用户名
+        let _userInfo = JSON.parse(that.$parent.globalData.userInfo);
+        _name = _userInfo.nickName.slice(0, 8);
+        // _name = "zx"
+        // 用户头像
+        _avatar = _userInfo.avatarUrl;
+        wx.downloadFile({
+          url: _avatar,
+          success: function (res) {
+            if (res.statusCode === 200) {
+              that.avatarUrl = res.tempFilePath;
+            }
+          }
+        })
+        // _avatar = "https://wx.qlogo.cn/mmopen/vi_32/DYAIOgq83eqsFNKkQpwtL7aQv8jv7dbNtYGUoKicnYNIglzIQ1PT1ctibKNNmEvLZPlcMyc2P7d63Q7zIEzq7Qvg/132"
+        // 底部导航切换按钮
+        that.isSharePage = true;
+        // 用户选择的数据
+        let _content = JSON.parse(wepy.getStorageSync("selectArr"));
+        _typeNum = _content.length;
+        if (_typeNum) {
+          _content.sort(arr.compare("selectNum"));
+          _favorite = _content[_typeNum - 1].name;
+          _content.forEach(ele => {
+          _city = _city.concat(ele.city);
+          ele.list.forEach(val => {
+            if (val.isSelect) {
+              _allSelectArr.push(val.name)
+            }
+          })
+        });
+        } else {
+          that.isMask = false;
+          that.isShowCanvasTable = true;
+          wepy.reLaunch({ url: "./index" });
+        }
+        _dataStr = _allSelectArr.join(" ");
+        if (_dataStr.length > 120) {
+          _dataStr = _dataStr.slice(0, 120) + "...";
+        }
+        _allNum = _allSelectArr.length;
+        if (_allNum < 50) {
+          _per = parseInt(1.6 * _allNum * 10) / 10;
+        } else if (_allNum < 100) {
+          _per = parseInt(0.2 * _allNum * 10) / 10 + 70;
+        } else if (_allNum < 200) {
+          _per = parseInt(0.05 * _allNum * 10) / 10 + 85;
+        } else if (_allNum < 350) {
+          _per = parseInt(0.0125 * _allNum * 10) / 10 + 92.5;
+        } else {
+          _per = 100
+        }
+        // 画出大地图
+        that.obj.option.series[0].data = _city;
+        // 画出分享图
+        let shareTime = setTimeout(() => {
+          let dataStrArr = textBreak(that.dataStr, 32, 470, 30, "#333", 11);
+          wx.canvasToTempFilePath({
+            canvasId: "img-3",
+            success: function(res) {
+              that.mapUrl = res.tempFilePath;
+              let imgObj = [
+                {method:"circle",cx:0,cy:0,cr:40,bg:"#fff"},
+                {method:"img",x:0,y: 0, url: "../asset/img/bg.jpg", w: 375, h: 666},
+                {method:"avata",x:157.5,y:10,url:that.avatarUrl,cx:187.5,cy:40,cr:30,w:60,h:60},
+                {method:'txt',x:187.5,y:90,txt: that.name + "的中华美食之旅",fs:16,tc:'#333',align:'center'},
+                {method:'txt',x:187.5,y:126,txt: "跨越        个菜系，超            款特色菜品",fs:16,tc:'#333',align:'center'},
+                {method:'txt',x:78,y:117,txt:(that.typeNumber > 9 ? that.typeNumber : " " + that.typeNumber),fs:26,tc:'#e00',align:'left'},
+                {method:'txt',x:187.5,y:117,txt: "                                 " + that.number + "                        ",fs:26,tc:'#e00',align:'center'},
+                {method:'txt',x:187.5,y:162,txt: "超越                     的吃货",fs:16,tc:'#333',align:'center'},
+                {method:'txt',x:187.5,y:153,txt: "      " + that.beyond + "%       ",fs:26,tc:'#e00',align:'center'},
+                {method:"img",x:-37.5,y:123,url:res.tempFilePath,w:450,h:350},
+                {method:'img', x:140, y:576, url: that.ewmUrl, w:60, h:60, down: that.ad20},
+                {method:'txt',x:210,y:585,txt: that.shareImgTxt1,fs:14,tc:'#333',align:'left'},
+                {method:'txt',x:210,y:612,txt: that.shareImgTxt2,fs:14,tc:'#333',align:'left'}
+              ];
+              imgObj = imgObj.concat(dataStrArr);
+              that.$broadcast("creatImgFn", imgObj);
+            }
+          })
+        }, 2000);
+        // 关闭load层
+        setTimeout(() => {
+          clearTimeout(shareTime);
+          that.isMask = false;
+          if (!that.isLock) {
+            that.isShowCanvasTable = true;
+          }
+          that.$apply();
+        }, 3000);
+      }
+      /**
+       *  结果页面数据绑定
+      */
+      // 绑定用户名字
+      that.name = _name;
+      // 绑定用户头像
+      that.avatar = _avatar;
+      // 
+      
+      that.typeNumber = _typeNum;
+      that.number = _allNum;
+      that.favorite = _favorite;
+      that.dataStr = _dataStr;
+      that.beyond = _per;
+      that.city = _city;
+      // 画出地图
+      that.mapObj.option.series[0].data =  _city;
+      
+    };
+    // 分享
+    onShareAppMessage(res) {
+      const that = this;
+      let obj = {};
+      if (res.from === "button") {
+        let _obj = {
+          _avatar: that.avatar,
+          _name: that.name,
+          _typeNum: that.typeNumber,
+          _allNum: that.number,
+          _favorite: that.favorite,
+          _per: that.beyond,
+          _dataStr: that.dataStr,
+          _city: that.city
+        }
+        let _str = JSON.stringify(_obj);
+        obj = {
+          title: "中国370多道特色菜品，你吃过哪些？",
+          path: "/pages/result?obj=" + _str,
+          success(res) {
+            if (res.shareTickets) {
+              that.isLock = false;
+              that.isShowCanvasTable = true;
+              that.$apply();
+            } else {
+              wepy.showToast({
+                title: '请分享到群', //提示的内容,
+                icon: "none", //图标,
+                duration: 2000, //延迟时间,
+                mask: true, //显示透明蒙层，防止触摸穿透,
+              });
+            }
+          },
+          fail(e) {
+            console.log(1);
+            console.log(e);
+          },
+          complete(res) {
+            console.log(2);
+            console.log(res);
+          },
+        }
+      }
+      else {
+        obj = {
+          title: "中国370多道特色菜品，你吃过哪些？",
+          imageUrl: "../asset/img/shareApp.jpg",
+          path: "/pages/index",
+        }
+      }
+      return obj
+    };
+    onShow() {
+      wx.showShareMenu({
+        withShareTicket: true,
+        success(e) {
+          console.log(e);
+          
+        }
+      })
+    }
+    onHide() {
+      console.log(1);
+    }
+    //销毁
+    onUnload() {
+      this.isMask = true;
+    }
+  }
+</script>
+
+<style lang="less">
+page {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.wrap {
+  position: relative;
+  box-sizing: border-box;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
+.shareImg {
+  position: absolute;
+  width: 100%;
+  height: 600px;
+  overflow: scroll;
+  top: -2000px;//
+  z-index: 9999;
+}
+.main {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  overflow: hidden;
+}
+
+.user-info {
+  position: relative;
+  left: -5000px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: 40rpx;
+  margin-bottom: 20rpx;
+  font-size: 30rpx;
+  font-weight: bold;
+  color:#666;
+  padding-top: 20rpx;
+  text-align: center;
+  text {
+    color: #e00;
+    font-size: 48rpx;
+  }
+  .user-avatar {
+    display: block;
+    width: 80rpx;
+    height: 80rpx;
+    margin: 0 auto;
+    margin-bottom: 20rpx;
+    border-radius: 50%;
+  }
+}
+.china-map-table {
+  position: absolute;
+  left: -1000px;
+  margin-top: -100rpx;
+}
+.user-select {
+  margin-top: -40rpx;
+  padding: 0 40rpx;
+  font-size: 24rpx;
+  text-align: left;
+  .user-select-txt {
+    position: absolute;
+    left: -1000px;
+    text-align: left;
+  }
+}
+.result-img {
+  position: absolute;
+  left: -5000px;
+  width: 375px;
+  height: 375px;
+  overflow: hidden;
+  text-align: center;
+}
+.isShowCanvasTable {
+  position: static !important;
+  // left: 0px ;
+}
+// load层
+.mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2000;
+  color: #fff;
+  font-size: 40rpx;
+  // background: #fff;
+  .load-wrap {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1001;
+  }
+  .bg-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    // z-index: 1000;
+    image {
+      width: 100%;
+      height: 100%;
+    }
+  }
+}
+.bgImg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  image {
+    width: 100%;
+    height: 100%;
+  }
+}
+// 底部导航
+.footer-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 140rpx;
+  z-index: 200;
+  background: #f1f1f1;
+  .test-nomal {
+    width: 100%;
+    height: 140rpx;
+    line-height: 140rpx;
+    display: flex;
+    flex-direction: row;
+    font-size: 28rpx;
+    button {
+      padding: 0;
+    }
+    .nav-btn {
+      flex: 1;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      height: 140rpx;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0;
+      background: #f1f1f1;
+      image {
+        width: 50rpx;
+        height: 50rpx;
+      }
+      text {
+        height: 40rpx;
+        line-height: 40rpx;
+        font-size: 28rpx;
+      }
+      &::after {
+        display: none;
+      }
+    }
+  }
+  .test-share {
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 140rpx;
+    line-height: 140rpx;
+    background: #f1f1f1;
+    image {
+      position: absolute;
+      top: 40rpx;
+      left: 170rpx;
+      width: 60rpx;
+      height: 60rpx;
+      z-index: 10;
+    }
+    button {
+      width: 100%;
+      height: 100%;
+      line-height: 140rpx;
+      font-size: 30rpx;
+      border-radius: 0;
+      border: 0;
+      font-size: 34rpx;
+      font-weight: bold;
+      border-radius: 0;
+      color: #ff6700;
+      background: #f1f1f1;
+      &::before {
+        display: none;
+      }
+      &::after {
+        display: none;
+      }
+    }
+  }
+}
+.ad8-img-wrap {
+  position: absolute;
+  bottom: 140rpx;
+  left: 0;
+  width: 100%;
+  height: 107px;
+  // background: #ccc;
+  z-index: 10;
+}
+.share-img-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 201;
+  background: rgba(2, 2, 2, 0.7);
+  image {
+    display: block;
+    width: 500rpx;
+    height: 900rpx;
+    margin: 50rpx auto;
+  }
+  button {
+    width: 500rpx;
+    height: 80rpx;
+    line-height: 80rpx;
+    font-size: 24rpx;
+    color: #333;
+    background: #fbe04f;
+    margin: 50rpx auto;
+  }
+}
+.lock-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  image {
+    width: 100%;
+    height: 100%;
+  }
+  .share-btn {
+    position: absolute;
+    bottom: 300rpx;
+    left: 10%;
+    width: 80%;
+    height: 100rpx;
+    line-height: 100rpx;
+    background: #fbe04f;
+    color: #333;
+    border-radius: 50rpx;
+    &::before {
+      display: none;
+    }
+    &::after {
+      display: none;
+    } 
+  }
+}
+@keyframes slide {
+  0%{
+    transform: translatey(0px)
+  }
+  100%{
+    transform: translatey(-156px)
+  }
+}
+</style>
